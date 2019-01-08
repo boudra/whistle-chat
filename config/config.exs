@@ -21,15 +21,6 @@ use Mix.Config
 #     config :logger, level: :info
 #
 #
-config :whistle,
-  server: [
-    plug: WhistleChat.Plug,
-    scheme: :http,
-    port: 4000,
-    socket_handlers: %{
-      "/ws" => WhistleChat.ProgramRouter
-    }
-  ]
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment

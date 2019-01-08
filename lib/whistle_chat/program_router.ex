@@ -1,4 +1,6 @@
 defmodule WhistleChat.ProgramRouter do
-  use Whistle.Router
-  match("counter", WhistleChat.ChatProgram, %{})
+  use Whistle.Router, path: "/ws"
+
+  match("chat", WhistleChat.ChatProgram, %{})
 end
+

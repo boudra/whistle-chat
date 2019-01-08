@@ -8,6 +8,15 @@ defmodule WhistleChat.Application do
   def start(_type, _args) do
     # List all child processes to be supervised
     children = [
+      {Whistle.Router, WhistleChat.ProgramRouter},
+      {Whistle.HttpServer, [
+        http: [port: 4000],
+        url: [scheme: :http],
+        plug: WhistleChat.Plug,
+        routers: [
+          WhistleChat.ProgramRouter
+        ]
+      ]}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

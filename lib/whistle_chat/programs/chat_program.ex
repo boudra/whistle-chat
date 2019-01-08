@@ -1,14 +1,18 @@
 defmodule WhistleChat.ChatProgram do
   use Whistle.Program
 
+  @adjectives ~w(Magical Quiet Happy Hungry)
+  @animals ~w(Llama Badger Bear Lion Cat)
+
   def init(_params) do
     {:ok, %{messages: [], users: []}}
   end
 
   def authorize(state, socket, params) do
-    user = "Anonymous" <> to_string(:rand.uniform(100))
+    user =
+      [Enum.random(@adjectives), Enum.random(@animals), to_string(:rand.uniform(100))]
 
-    {:ok, socket, %{input: "", user: user}}
+    {:ok, socket, %{input: "", user: Enum.join(user)}}
   end
 
   # Update
@@ -17,8 +21,12 @@ defmodule WhistleChat.ChatProgram do
     {:ok, state, %{session | input: input}}
   end
 
-  def update(:submit, state = %{messages: messages}, session = %{user: user, input: input}) do
+  def update(:submit_msg, state = %{messages: messages}, session = %{user: user, input: input}) do
     {:ok, %{state | messages: messages ++ [{user, input}]}, %{session | input: ""}}
+  end
+
+  def update({"update_input", input}, state, session) do
+    {:ok, state, %{session | input: input}}
   end
 
   # Process Messages
@@ -29,7 +37,7 @@ defmodule WhistleChat.ChatProgram do
 
   def handle_info({:disconnected, _, %{user: user}}, state = %{users: users}) do
     new_users =
-      Enum.filter(users, &(&1 == user))
+      Enum.reject(users, &(&1 == user))
 
     {:ok, %{state | users: new_users}}
   end
@@ -41,7 +49,7 @@ defmodule WhistleChat.ChatProgram do
   # View
 
   def view(state, session) do
-    Html.div([], [
+    Html.div([style: "max-width: 400px; font-family: sans-serif;"], [
       view_connected_users(state[:users]),
       view_messages(state[:messages]),
       view_controls(session)
@@ -54,24 +62,23 @@ defmodule WhistleChat.ChatProgram do
       |> Enum.map(&Html.text/1)
       |> Enum.intersperse(Html.text(", "))
 
-    Html.div([], [
+    Html.div([style: "padding: 10px; background: #eee; box-shadow: 0px 1px 4px rgba(0,0,0,0.1); z-index: 2;"], [
       Html.strong([], "Connected users:"),
       Html.div([], user_list),
-      Html.node("hr", [], [])
     ])
   end
 
   defp view_controls(%{user: user, input: input}) do
-    Html.form([on: [submit: :submit]], [
+    Html.form([id: "form", on: [submit: :submit_msg]], [
       Html.node("hr", [], []),
       Html.p([], user <> ": "),
-      Html.input(required: true, value: input, on: [input: &{:update_input, &1}]),
+      Html.input(name: "msg", required: true, value: input, on: [input: &{:update_input, &1}]),
       Html.button([], "Send")
     ])
   end
 
   defp view_messages(messages) do
-    Html.div([style: %{"height" => "300px", "overflow" => "scroll"}],
+    Html.div([class: "messages", style: "overflow: auto; padding: 10px; background: #f7f7f7; max-height: 200px;"],
       Enum.map(messages, fn {user, msg} ->
         Html.p([], [
           Html.strong([], user <> ": "),

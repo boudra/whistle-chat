@@ -8,7 +8,7 @@ defmodule WhistleChat.Application do
   def start(_type, _args) do
     # List all child processes to be supervised
     children = [
-      {Whistle.Router, WhistleChat.ProgramRouter},
+      {WhistleChat.ProgramRouter, []},
       {Whistle.HttpServer, [
         http: [port: 4000],
         url: [scheme: :http],

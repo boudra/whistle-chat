@@ -1,18 +1,12 @@
 defmodule WhistleChat.ChatProgram do
   use Whistle.Program
 
-  @adjectives ~w(Magical Quiet Happy Hungry)
-  @animals ~w(Llama Badger Bear Lion Cat)
-
   def init(_params) do
     {:ok, %{messages: [], users: []}}
   end
 
-  def authorize(state, socket, params) do
-    user =
-      [Enum.random(@adjectives), Enum.random(@animals), to_string(:rand.uniform(100))]
-
-    {:ok, socket, %{input: "", user: Enum.join(user)}}
+  def authorize(state, socket, %{"user" => user}) do
+    {:ok, socket, %{input: "", user: user}}
   end
 
   # Update

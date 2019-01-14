@@ -10,7 +10,7 @@ defmodule WhistleChat.Plug do
       <title></title>
     </head>
     <body>
-      #{Whistle.Program.mount(conn, WhistleChat.ProgramRouter, "chat", %{})}
+      #{}
       <script src="/js/whistle.js"></script>
     </body>
     </html>
@@ -27,11 +27,23 @@ defmodule WhistleChat.Plug do
 
   plug :index
 
+  @adjectives ~w(Magical Quiet Happy Hungry)
+  @animals ~w(Llama Badger Bear Lion Cat)
+
   def index(conn, _opts) do
-    IO.inspect {conn}
+    user =
+      Enum.join([Enum.random(@adjectives), Enum.random(@animals), to_string(:rand.uniform(100))])
+
+    resp =
+      Whistle.Program.fullscreen(
+        conn,
+        WhistleChat.ProgramRouter,
+        "main",
+        %{"user" => user, "path" => conn.path_info}
+      )
 
     conn
     |> put_resp_content_type("text/html")
-    |> send_resp(200, index_html(conn))
+    |> send_resp(200, resp)
   end
 end

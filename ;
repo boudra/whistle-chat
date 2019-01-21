@@ -35,7 +35,11 @@ defmodule WhistleChat.MainProgram do
     {:ok, state, session}
   end
 
-  defp view_layout(title, main, error) do
+  def handle_info(msg, state) do
+    {:ok, state}
+  end
+
+  def view_layout(title, main, error) do
     Navigation.html([lang: "en"], [
       Html.head([], [
         Html.meta(charset: "UTF-8"),
@@ -58,7 +62,7 @@ defmodule WhistleChat.MainProgram do
     ])
   end
 
-  defp view_rooms(rooms) do
+  def view_rooms(rooms) do
     Html.div(
       [class: "ui segments"],
       Enum.map(rooms, fn room ->
@@ -71,11 +75,11 @@ defmodule WhistleChat.MainProgram do
     )
   end
 
-  defp view_error(nil) do
+  def view_error(nil) do
     Html.div([], [])
   end
 
-  defp view_error(error) do
+  def view_error(error) do
     Html.div([class: "ui negative message"], [
       Html.i(class: "close icon"),
       Html.div([class: "header"], "An error happened!"),
@@ -83,7 +87,7 @@ defmodule WhistleChat.MainProgram do
     ])
   end
 
-  def index(state, %{error: error, name: name}) do
+  def view([], state, %{error: error, name: name}) do
     view_layout("Whistle Chat Demo", [
       Html.h1([class: "ui center aligned masthead"], "Welcome to the Whistle chat!"),
       Html.p([], """
@@ -117,11 +121,17 @@ defmodule WhistleChat.MainProgram do
     ], error)
   end
 
-  def chat(state, %{room: room, name: name}) do
+  def view(["chat", room], state, %{name: name}) do
     view_layout("Room #" <> room, [
       Html.h1([class: "ui left"], "#" <> room),
       Navigation.link("/", [], "Homepage"),
       Html.program("chat:#{room}", %{"user" => name})
+    ], nil)
+  end
+
+  def view(path, state, session) do
+    view_layout("Not found", [
+      Html.p([], "path /#{Enum.join(path, "/")} not found")
     ], nil)
   end
 end

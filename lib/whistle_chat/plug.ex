@@ -10,12 +10,6 @@ defmodule WhistleChat.Plug do
     only: ~w(css js favicon.ico robots.txt)
   )
 
-  def log(conn, _opts) do
-    IO.inspect(conn)
-  end
-
-  plug :log
-
   plug Plug.Parsers, parsers: [:urlencoded, :json],
     pass: ["text/*"],
     json_decoder: Jason

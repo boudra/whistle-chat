@@ -32,3 +32,14 @@ use Mix.Config
 #
 
 config :whistle, code_reload?: Mix.env() == :dev
+
+if Mix.env() == :prod do
+  config :whistle_chat, WhistleChat.ProgramRouter,
+    http: [port: 4000],
+    url: [port: 443, scheme: :https],
+    plug: WhistleChat.Plug
+else
+  config :whistle_chat, WhistleChat.ProgramRouter,
+    http: [port: 4000],
+    plug: WhistleChat.Plug
+end

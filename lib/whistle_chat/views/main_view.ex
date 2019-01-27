@@ -65,7 +65,7 @@ defmodule WhistleChat.MainView do
 
     view_layout(
       "Whistle Chat Demo",
-      Html.div([class: "ui grid", id: "one"], [
+      Html.div([class: "ui stackable container grid", id: "one"], [
         Html.div([class: "six wide column"], [
           Html.h1([class: ""], "Welcome to the Whistle chat!"),
           Html.p([], """
@@ -84,13 +84,13 @@ defmodule WhistleChat.MainView do
           ),
           Html.br(),
           Html.br(),
-          Html.form([class: "ui small action input", on: [submit: &{:change_username, &1}]], [
+          Html.form([class: "ui fluid small action input", on: [submit: &{:change_username, &1}]], [
             Html.input(type: "text", name: "name", value: user_name),
             Html.button([class: "ui button"], "Change username")
           ])
         ]),
         Html.div([class: "ten wide column"], [
-          Html.form([class: "ui action input", on: [submit: &{:create_room, &1}]], [
+          Html.form([class: "ui fluid action input", on: [submit: &{:create_room, &1}]], [
             Html.input(type: "text", name: "name", value: ""),
             Html.button([class: "ui button"], "Create a new room")
           ]),

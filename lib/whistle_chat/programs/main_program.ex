@@ -1,33 +1,102 @@
 defmodule WhistleChat.MainProgram do
   use Whistle.Program
-  use Whistle.Navigation, %{
-    "/" => :index,
-    "/chat/:room" => :chat,
-  }
+  alias WhistleChat.MainView
+
+  defmodule Room do
+    defstruct messages: [{"whistlebot", "Welcome to the chat!"}]
+  end
+
+  defmodule State do
+    defstruct users: %{}, rooms: %{"general" => %Room{}}
+  end
+
+  defmodule Session do
+    defstruct [:route, :error, :user_id, :msg]
+  end
+
+  defp user_id() do
+    :crypto.strong_rand_bytes(4)
+    |> Base.encode32(case: :lower, padding: false)
+  end
+
+  ## Routes
+
+  def route([], state, session, query_params) do
+    {:ok, %{session | route: :index}}
+  end
+
+  def route(["chat", room_name], %{rooms: rooms}, session, query_params) do
+    if Map.has_key?(rooms, room_name) do
+      {:ok, %{session | route: {:chat, room_name}}}
+    else
+      {:error, :not_found}
+    end
+  end
+
+  def route(route, _state, _session, _query_params) do
+    {:error, :not_found}
+  end
+
+  ## Init
 
   def init(_params) do
-    {:ok, %{rooms: []}}
+    {:ok, %State{}}
   end
 
-  def authorize(state, socket, %{"user" => user}) do
-    {:ok, socket, %{error: nil, name: user}}
+  def authorize(state, socket, _params) do
+    {:ok, socket, %Session{user_id: user_id(), route: :index}}
   end
 
-  # Update
+  # Process Messages
+
+  def handle_info({:connected, _, %{user_id: id}}, state = %{users: users}) do
+    {:ok, %{state | users: Map.put(users, id, "anonymous")}}
+  end
+
+  def handle_info({:disconnected, _, %{user_id: id}}, state = %{users: users}) do
+    {:ok, %{state | users: Map.delete(users, id)}}
+  end
+
+  ## Update
 
   def update({:change_username, %{"name" => name}}, state, session) do
-    {:ok, state, %{session | name: name}}
+    {:ok, %{state | users: Map.put(state.users, session.user_id, name)}, session}
   end
 
-  def update({:create_room, _}, state = %{rooms: rooms}, session) when length(rooms) > 10 do
-    {:ok, state, %{session | error: "Whoops! We have reached the maximum number of rooms!"}}
+  def update({:change_msg, msg}, state, session) do
+    {:ok, state, %{session | msg: msg}}
+  end
+
+  def update({:submit_msg, _room_name}, state, session = %{msg: ""}) do
+    {:ok, state, %{session | error: "Please introduce a message"}}
+  end
+
+  def update({:submit_msg, room_name}, state, session) do
+    case Map.fetch(state.rooms, room_name) do
+      {:ok, room} ->
+        new_room =
+          Map.update!(room, :messages, fn messages ->
+            messages ++ [{Map.get(state.users, session.user_id), session.msg}]
+          end)
+
+        {:ok, %{state | rooms: Map.put(state.rooms, room_name, new_room)}, %{ session | error: nil, msg: ""}}
+
+      :error ->
+        {:ok, state, session}
+    end
   end
 
   def update({:create_room, %{"name" => name}}, state = %{rooms: rooms}, session) do
-    if Regex.match?(~r/^[a-z\-]{1,25}$/, name) do
-      {:ok, %{state | rooms: [name | rooms]}, %{session | error: nil}}
-    else
-      {:ok, state, %{session | error: "Room names can only be in kebab-case and less than 25 chars"}}
+    cond do
+      Map.size(rooms) >= 20 ->
+        {:ok, state, %{session | error: "Whoops! We have reached the maximum number of rooms!"}}
+
+      not Regex.match?(~r/^[a-z\-]{1,25}$/, name) ->
+        {:ok, state,
+         %{session | error: "Room names can only be in kebab-case and less than 25 chars"}}
+
+      true ->
+        {:ok, %{state | rooms: Map.put_new(rooms, name, %Room{})}, %{session | error: nil}}
     end
   end
 
@@ -35,93 +104,13 @@ defmodule WhistleChat.MainProgram do
     {:ok, state, session}
   end
 
-  defp view_layout(title, main, error) do
-    Navigation.html([lang: "en"], [
-      Html.head([], [
-        Html.meta(charset: "UTF-8"),
-        Html.title(title),
-        Html.script(src: "/js/whistle.js"),
-        Html.link(
-          rel: "stylesheet",
-          href: "https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css"
-        )
-      ]),
-      Html.body([], [
-        Html.div(
-          [
-            style: "min-height: 100vh",
-            class: "ui inverted vertical masthead center aligned segment"
-          ],
-          [Html.div([class: "ui raised container segment"], [view_error(error)] ++ main)]
-        )
-      ])
-    ])
+  ## view
+
+  def view(state, session = %{route: :index}) do
+    MainView.index(state, session)
   end
 
-  defp view_rooms(rooms) do
-    Html.div(
-      [class: "ui segments"],
-      Enum.map(rooms, fn room ->
-        Html.div([class: "ui segment"], [
-          Navigation.link("/chat/#{room}", [], [
-            Html.strong([], "#" <> room)
-          ])
-        ])
-      end)
-    )
-  end
-
-  defp view_error(nil) do
-    Html.div([], [])
-  end
-
-  defp view_error(error) do
-    Html.div([class: "ui negative message"], [
-      Html.i(class: "close icon"),
-      Html.div([class: "header"], "An error happened!"),
-      Html.p([], to_string(error))
-    ])
-  end
-
-  def index(state, %{error: error, name: name}) do
-    view_layout("Whistle Chat Demo", [
-      Html.h1([class: "ui center aligned masthead"], "Welcome to the Whistle chat!"),
-      Html.p([], """
-      This web application is first rendered server side via a normal HTTP response,
-      and then becomes a "dumb" client that dynamically patches the DOM with updates received via WebSockets.
-      """),
-      Html.p([], """
-      The app state and view are automatically updated and broadcasted with Whistle. Presence is also tracked in the chat room.
-      """),
-      Html.p([], """
-      You can change your username, create chat rooms and chat!
-      """),
-      Html.a([href: "https://github.com/boudra/whistle-chat"], "Check out the source code here"),
-      Html.br(),
-      Html.br(),
-      Html.form([class: "ui small action input", on: [submit: &{:change_username, &1}]], [
-        Html.input(type: "text", name: "name", value: name),
-        Html.button([class: "ui button"], "Change username")
-      ]),
-      Html.br(),
-      Html.br(),
-      Html.div([], [
-        Html.strong([], "List of available chat rooms:"),
-        view_rooms(state.rooms)
-      ]),
-      Html.br(),
-      Html.form([class: "ui action input", on: [submit: &{:create_room, &1}]], [
-        Html.input(type: "text", name: "name", value: ""),
-        Html.button([class: "ui button loading"], "Create a new room")
-      ])
-    ], error)
-  end
-
-  def chat(state, %{room: room, name: name}) do
-    view_layout("Room #" <> room, [
-      Html.h1([class: "ui left"], "#" <> room),
-      Navigation.link("/", [], "Homepage"),
-      Html.program("chat:#{room}", %{"user" => name})
-    ], nil)
+  def view(state, session = %{route: {:chat, room}}) do
+    MainView.chat(state, session, room)
   end
 end

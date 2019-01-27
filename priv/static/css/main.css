@@ -1,0 +1,12 @@
+.messages {
+  background: #f7f7f7;
+  height: 70vh;
+  padding: 10px;
+  overflow-y: scroll;
+  overflow-x: auto;
+  margin-bottom: 10px;
+}
+
+.messages p:last-child {
+  margin-bottom: 1rem;
+}

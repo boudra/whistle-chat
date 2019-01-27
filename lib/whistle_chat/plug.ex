@@ -10,24 +10,12 @@ defmodule WhistleChat.Plug do
     only: ~w(css js favicon.ico robots.txt)
   )
 
-  plug(Whistle.Navigation.Plug,
+  plug Plug.Parsers, parsers: [:urlencoded, :json],
+    pass: ["text/*"],
+    json_decoder: Jason
+
+  plug(Whistle.Program.Plug,
     router: WhistleChat.ProgramRouter,
-    program: "counter",
-    params: %{}
+    program: "main"
   )
-
-  @adjectives ~w(Magical Quiet Happy Hungry)
-  @animals ~w(Llama Badger Bear Lion Cat)
-
-  def index(conn, _opts) do
-    user =
-      Enum.join([Enum.random(@adjectives), Enum.random(@animals), to_string(:rand.uniform(100))])
-
-    conn
-    |> Whistle.Program.fullscreen(
-      WhistleChat.ProgramRouter,
-      "main",
-      %{"user" => user, "path" => conn.path_info}
-    )
-  end
 end

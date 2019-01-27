@@ -21,11 +21,11 @@ defmodule WhistleChat.MainProgram do
 
   ## Routes
 
-  def route([], state, session, query_params) do
+  def route([], _state, session, _query_params) do
     {:ok, %{session | route: :index}}
   end
 
-  def route(["chat", room_name], %{rooms: rooms}, session, query_params) do
+  def route(["chat", room_name], %{rooms: rooms}, session, _query_params) do
     if Map.has_key?(rooms, room_name) do
       {:ok, %{session | route: {:chat, room_name}}}
     else
@@ -33,7 +33,7 @@ defmodule WhistleChat.MainProgram do
     end
   end
 
-  def route(route, _state, _session, _query_params) do
+  def route(_route, _state, _session, _query_params) do
     {:error, :not_found}
   end
 
@@ -43,7 +43,7 @@ defmodule WhistleChat.MainProgram do
     {:ok, %State{}}
   end
 
-  def authorize(state, socket, _params) do
+  def authorize(_state, socket, _params) do
     {:ok, socket, %Session{user_id: user_id(), route: :index}}
   end
 
@@ -100,7 +100,7 @@ defmodule WhistleChat.MainProgram do
     end
   end
 
-  def update(msg, state, session) do
+  def update(_msg, state, session) do
     {:ok, state, session}
   end
 

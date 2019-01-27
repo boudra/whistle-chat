@@ -6,6 +6,7 @@ defmodule WhistleChat.MainView do
     Html.html([lang: "en"], [
       Html.head([], [
         Html.meta(charset: "UTF-8"),
+        Html.meta(name: "viewport", content: "width=device-width, initial-scale=1"),
         Html.title(title),
         Html.script(src: "/js/whistle.js"),
         Html.script(src: "/js/app.js"),

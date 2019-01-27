@@ -23,7 +23,7 @@ defmodule WhistleChat.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:whistle, git: "https://github.com/boudra/whistle.git", tag: "master"},
+      {:whistle, git: "https://github.com/boudra/whistle.git", tag: "599d0a67ec5c936509dd6fa1850b4b5591dffd1d"},
 
       {:plug, "~> 1.7"},
       {:jason, "~> 1.0"},

@@ -1,8 +1,6 @@
 defmodule WhistleChat.Plug do
   use Plug.Builder
 
-  plug Plug.SSL, rewrite_on: [:x_forwarded_proto]
-
   plug(Plug.Logger)
 
   plug(Plug.Static,
